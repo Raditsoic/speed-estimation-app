@@ -10,7 +10,7 @@ import tempfile
 
 from ultralytics.utils.checks import check_requirements
 from ultralytics.utils.downloads import GITHUB_ASSETS_STEMS
-from utilities.speed_estimator import SpeedEstimator
+from speed_estimator import SpeedEstimator
 from ultralytics import YOLO
 
 st.set_page_config(page_title="Ultralytics Streamlit App", layout="wide", initial_sidebar_state="auto")
