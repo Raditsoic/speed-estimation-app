@@ -16,8 +16,8 @@ from ultralytics import YOLO
 st.set_page_config(page_title="Ultralytics Streamlit App", layout="wide", initial_sidebar_state="auto")
 
 # Global variables to control threading
-frame_queue = deque(maxlen=1)  # Store only the latest frame
-all_speeds = deque(maxlen=500)  # Store speed data for averaging
+frame_queue = deque(maxlen=1)  
+all_speeds = deque(maxlen=500)  
 speed_data = []
 processing_complete = False
 
@@ -63,12 +63,10 @@ def inference(model=None):
     """Runs real-time object detection and speed estimation on video input using Ultralytics YOLOv8 in a Streamlit application."""
     check_requirements("streamlit>=1.29.0")
 
-    # Hide main menu style
     st.markdown("""<style>MainMenu {visibility: hidden;}</style>""", unsafe_allow_html=True)
 
     st.title("Speed Estimation App")
 
-    # Sidebar configuration
     st.sidebar.title("User Configuration")
     source = st.sidebar.selectbox("Video", ("Camera", "Video"))
 
@@ -93,7 +91,7 @@ def inference(model=None):
     selected_classes = st.sidebar.multiselect("Classes", class_names, default=class_names[:3])
     selected_ind = [class_names.index(option) for option in selected_classes]
 
-    # Other configurations
+    # Inference Config
     enable_trk = st.sidebar.radio("Enable Tracking", ("Yes", "No"))
     conf = float(st.sidebar.slider("Confidence Threshold", 0.0, 1.0, 0.25, 0.01))
     iou = float(st.sidebar.slider("IoU Threshold", 0.0, 1.0, 0.45, 0.01))
@@ -112,7 +110,7 @@ def inference(model=None):
             temp_file.write(vid_file.read())
             temp_file.close()
             
-            # Start video processing in a separate thread
+            # Thread Video Process
             threading.Thread(target=process_video, args=(model, temp_file.name, selected_ind, conf, iou, enable_trk)).start()
             
             while not processing_complete or frame_queue:
@@ -124,12 +122,11 @@ def inference(model=None):
                         avg_speed = np.mean(all_speeds)
                         speed_data.append({'Elapsed Time (s)': elapsed_time, 'Average Speed': avg_speed})
                         
-                        # Update the chart and speed data
                         df = pd.DataFrame(speed_data)
                         chart_placeholder.line_chart(df.set_index('Elapsed Time (s)'))
                         metric_placeholder.metric("Current Average Speed (km/h)", f"{avg_speed:.2f}")
                 
-                time.sleep(0.03)  # Control the UI update frequency
+                time.sleep(0.03)  
             
             st.success("Processing complete!")
             
