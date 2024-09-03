@@ -83,7 +83,11 @@ def inference(model=None):
 
     selected_model = st.sidebar.selectbox("Model", available_models)
     with st.spinner("Model is downloading..."):
+        # Cuda ON
         model = YOLO(f"{selected_model.lower()}.pt").to("cuda")
+        
+        # Cuda OFF, Uncomment below and comment above line to run on CPU
+        # model = YOLO(f"{selected_model.lower()}.pt")
         class_names = list(model.names.values())
     st.success("Model loaded successfully!")
 
