@@ -21,10 +21,10 @@ all_speeds = deque(maxlen=500)
 speed_data = []
 processing_complete = False
 
-def process_video(model, temp_file_name, selected_ind, conf, iou, enable_trk):
+def process_video(model, video_source, selected_ind, conf, iou, enable_trk):
     global processing_complete
-    cap = cv2.VideoCapture(temp_file_name)
-    assert cap.isOpened(), "Error reading video file"
+    cap = cv2.VideoCapture(video_source)
+    assert cap.isOpened(), "Error reading video stream"
     w, h, fps = (int(cap.get(x)) for x in (cv2.CAP_PROP_FRAME_WIDTH, cv2.CAP_PROP_FRAME_HEIGHT, cv2.CAP_PROP_FPS))
     
     line_pts = [(0, h // 2), (w, h // 2)]
@@ -68,13 +68,14 @@ def inference(model=None):
     st.title("Speed Estimation App")
 
     st.sidebar.title("User Configuration")
-    source = st.sidebar.selectbox("Video", ("Camera", "Video"))
+    source = st.sidebar.selectbox("Video Source", ("Camera (RTSP)", "Upload Video"))
 
-    vid_file_name = ""
-    if source == "Video":
+    video_source = None
+    if source == "Upload Video":
         vid_file = st.sidebar.file_uploader("Upload Video File", type=["mp4", "mov", "avi", "mkv"])
-    elif source == "Camera":
-        vid_file_name = 0
+    elif source == "Camera (RTSP)":
+        rtsp_url = st.sidebar.text_input("RTSP URL", "rtsp://admin:ITSit2024@169.254.86.111:554/Streaming/Channels/101")
+        video_source = rtsp_url
 
     # Model selection
     available_models = [x.replace("yolo", "YOLO") for x in GITHUB_ASSETS_STEMS if x.startswith("yolov8")]
@@ -83,11 +84,7 @@ def inference(model=None):
 
     selected_model = st.sidebar.selectbox("Model", available_models)
     with st.spinner("Model is downloading..."):
-        # Cuda ON
         model = YOLO(f"{selected_model.lower()}.pt").to("cuda")
-        
-        # Cuda OFF, Uncomment below and comment above line to run on CPU
-        # model = YOLO(f"{selected_model.lower()}.pt")
         class_names = list(model.names.values())
     st.success("Model loaded successfully!")
 
@@ -109,13 +106,20 @@ def inference(model=None):
         metric_placeholder = st.empty()
 
     if st.sidebar.button("Start"):
-        if source == "Video" and vid_file is not None:
+        if source == "Upload Video" and vid_file is not None:
             temp_file = tempfile.NamedTemporaryFile(delete=False)
             temp_file.write(vid_file.read())
             temp_file.close()
-            
+            video_source = temp_file.name
+        elif source == "Camera (RTSP)":
+            video_source = rtsp_url
+        else:
+            st.warning("Please select a valid video source.")
+            return
+
+        if video_source:
             # Thread Video Process
-            threading.Thread(target=process_video, args=(model, temp_file.name, selected_ind, conf, iou, enable_trk)).start()
+            threading.Thread(target=process_video, args=(model, video_source, selected_ind, conf, iou, enable_trk)).start()
             
             while not processing_complete or frame_queue:
                 if frame_queue:
@@ -139,12 +143,8 @@ def inference(model=None):
                 st.text(f'Overall Average Speed: {df["Average Speed"].mean():.2f} km/h')
             else:
                 st.text('No speed data recorded')
-        
-        elif source == "Camera":
-            st.warning("Camera input is not implemented in this version.")
-        
         else:
-            st.warning("Please upload a video file.")
+            st.warning("Please provide a valid video source.")
 
     # Clear CUDA memory
     torch.cuda.empty_cache()
