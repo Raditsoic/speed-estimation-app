@@ -12,3 +12,11 @@ pip uninstall opencv-python-headless -y
 
 pip install opencv-python --upgrade
 ```
+
+## Camera Installation
+
+1. Connect the power cable and ethernet for the camera
+2. Download SADP for the camera
+3. Grab the IPv4 Address and type it in to your browser
+4. You will see the live preview of the camera and the advanced settings to see some port and other setting and information
+5. To get the RTSP, use this line for your code 'rtsp://{username}:{password}@{IP}:{port}/stream'
